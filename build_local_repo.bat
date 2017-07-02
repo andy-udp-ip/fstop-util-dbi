@@ -1,0 +1,2 @@
+rem start /WAIT mvn install:install-file -Dfile=.\lib\datatableswrapper-1.0.jar -DgroupId=com.fusheng -DartifactId=dataTableLib -Dversion=1.0 -Dpackaging=jar -DlocalRepositoryPath=.\repo
+rem start /WAIT mvn install:install-file -Dfile=.\lib\sqljdbc41.jar -DgroupId=com.microsoft -DartifactId=sqljdbc -Dversion=4.1 -Dpackaging=jar -DlocalRepositoryPath=.\repo

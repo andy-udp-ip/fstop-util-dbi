@@ -1,0 +1,73 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# IntelliJ
+*.ipr
+*.iml
+*.iws
+.idea/
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# MAC file
+.DS_Store
+
+# eclipse files
+.project
+.classpath
+.settings/
+
+# maven build files
+target/
+
+#
+# Maven release metadata
+#
+release.properties
+pom.xml.*
+
+#spring boot
+!.mvn/wrapper/maven-wrapper.jar
+
+### STS ###
+.apt_generated
+.factorypath
+.springBeans
+
+### NetBeans ###
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+.nb-gradle-properties
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+# others
+bin/
+/.gradle/
+*.aux
+*.toc
+hibernateDB
+springHibernateDB
+.patch
+
+

@@ -76,6 +76,23 @@
       </snapshotRepository>
   </distributionManagement>
 
+  <repositories>
+    <repository>
+        <id>fstop-util-base64-mvn-repo</id>
+        <url>https://raw.github.com/andy-udp-ip/fstop-util-base64/mvn-repo/</url>
+        <!-- 
+        <releases>
+            <enabled>true</enabled>
+    	</releases>
+        
+        <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+        </snapshots>
+        -->
+    </repository>
+  </repositories>
+
  
   <build>
     <plugins>
@@ -205,11 +222,26 @@
   
   <dependencies>
     <dependency>
+      <groupId>tw.com.fstop</groupId>
+      <artifactId>fstop-util-base64</artifactId>
+      <version>1.0.1</version>
+      <scope>compile</scope>
+    </dependency>
+    
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>3.8.1</version>
+      <version>4.12</version>
       <scope>test</scope>
     </dependency>
+    
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>3.5.2</version>
+      <scope>test</scope>
+	</dependency>
+    
   </dependencies>
   
  </project>

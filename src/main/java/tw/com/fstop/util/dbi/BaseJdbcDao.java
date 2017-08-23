@@ -20,7 +20,8 @@ import javax.sql.DataSource;
 
 import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import tw.com.fstop.util.dbi.DataConvertMap;
 import tw.com.fstop.util.dbi.DbTable;
@@ -41,7 +42,10 @@ import tw.com.fstop.util.StrUtil;
  */
 abstract public class BaseJdbcDao 
 {
-	private final static Logger log = Logger.getLogger(BaseJdbcDao.class.getName());
+    //Log4j
+	//private final static Logger log = Logger.getLogger(BaseJdbcDao.class.getName());
+    //Slf4j
+    private final static Logger log = LoggerFactory.getLogger(BaseJdbcDao.class);
 	
 	static String TABLE_NAME = "";
 
@@ -51,6 +55,8 @@ abstract public class BaseJdbcDao
 	static String DEF_DB_USER = "goxxxxx";
 	static String DEF_DB_PASSWORD = "xxxxxx";
 	static Boolean IS_USE_JNDI = false;
+	
+	static String PRODUCT_NAME_SQLSERVER = "Microsoft SQL Server";
 	
 	public static final String ENCODING="utf8";
 	
@@ -235,7 +241,7 @@ abstract public class BaseJdbcDao
 		if (tables.get(getTableName()) != null && useHint == true)
 		{
 			String productName = tables.get(getTableName()).getProductName();
-			if (productName.equalsIgnoreCase("Microsoft SQL Server"))
+			if (productName.equalsIgnoreCase(PRODUCT_NAME_SQLSERVER))
 			{
 				queryHint1 = "";
 				queryHint2 = " with (nolock) ";
@@ -257,7 +263,7 @@ abstract public class BaseJdbcDao
 		//若是不存在則先新增
 		if (tables.get(getTableName()) == null)
 		{
-			System.out.println("tables get null");
+		    log.debug("loading table info...");
 			Map<String, DbTableFieldInfo> fields = Collections.synchronizedMap(new LinkedHashMap<String, DbTableFieldInfo>());
 			Map<String, DbTableFieldInfo> keyFields = Collections.synchronizedMap(new HashMap<String, DbTableFieldInfo>());
 			DbTable table = new DbTable();
@@ -327,7 +333,8 @@ abstract public class BaseJdbcDao
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			log.error(e);
+			//log.error(e);
+			log.error(e.getMessage(), e);
 		}
 		
 		return dbConnection;
@@ -648,7 +655,9 @@ abstract public class BaseJdbcDao
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			log.debug(e);
+			//log.debug(e);
+	         log.error(e.getMessage(), e);
+
 		}
 		finally
 		{
@@ -709,7 +718,9 @@ abstract public class BaseJdbcDao
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			log.debug(e);
+			//log.debug(e);
+	         log.error(e.getMessage(), e);
+
 		}
 		finally
 		{
@@ -759,7 +770,9 @@ abstract public class BaseJdbcDao
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			log.debug(e);
+			//log.debug(e);
+	         log.error(e.getMessage(), e);
+
 		}
 		finally
 		{
@@ -830,7 +843,9 @@ abstract public class BaseJdbcDao
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			log.debug(e);			
+			//log.debug(e);
+	         log.error(e.getMessage(), e);
+
 		}
 		finally
 		{
@@ -899,7 +914,9 @@ abstract public class BaseJdbcDao
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			log.debug(e);			
+			//log.debug(e);
+	         log.error(e.getMessage(), e);
+
 		}
 		finally
 		{
@@ -936,7 +953,9 @@ abstract public class BaseJdbcDao
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			log.debug(e);
+			//log.debug(e);
+	         log.error(e.getMessage(), e);
+
 		}
 		finally
 		{
@@ -971,7 +990,9 @@ abstract public class BaseJdbcDao
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			log.debug(e);
+			//log.debug(e);
+	         log.error(e.getMessage(), e);
+
 		}
 		finally
 		{
@@ -1028,7 +1049,9 @@ abstract public class BaseJdbcDao
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			log.debug(e);
+			//log.debug(e);
+	         log.error(e.getMessage(), e);
+
 		}
 		finally
 		{
@@ -1104,7 +1127,9 @@ abstract public class BaseJdbcDao
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			log.debug(e);			
+			//log.debug(e);
+	         log.error(e.getMessage(), e);
+
 		}
 		finally
 		{
@@ -1182,8 +1207,42 @@ abstract public class BaseJdbcDao
 		System.out.println("getTableName=" + getTableName() + " use coordinator=" + this.useCoordinator);
 
 		//TODO 在此處設定 jdbc 連線資訊，就不用在子類別個設定
+		if (this.useCoordinator == false)
+        {   
+	        return getDbConnection(this.useJNDI, this.jndiName, this.jdbcDriver, this.jdbcUrl, this.dbUser, this.dbPassword);		    
+        }
 		
-		return getDbConnection(this.useJNDI, this.jndiName, this.jdbcDriver, this.jdbcUrl, this.dbUser, this.dbPassword);			
+		//使用 ConnectionCoordinator的方式 
+        DbConnectionInfo dbInfo = null;
+        try 
+        {
+            if (StrUtil.isEmpty(this.dbUser))
+            {
+                dbInfo = ConnectionCoordinator.getPooledDbConnectionInfo(getTableName());
+                //dbInfo = ConnectionCoordinator.getDbConnectionInfo(getTableName());
+                this.jdbcDriver = dbInfo.getJdbcDriver();
+                this.jndiName = dbInfo.getJndiName();
+                this.jdbcUrl = dbInfo.getJdbcUrl();
+                this.dbUser = dbInfo.getDbUser();
+                this.dbPassword = dbInfo.getDbPassword();
+                this.useJNDI = dbInfo.isUseJndi();              
+            }
+            
+            if (dbConnection == null || dbConnection.isClosed())
+            {
+                dbConnection = ConnectionCoordinator.getPooledDbConnection(getTableName());             
+                //dbConnection = ConnectionCoordinator.getJndiDbConnection(getTableName());             
+            }
+            
+            return dbConnection;
+        } 
+        catch (Exception e) 
+        {
+            log.error(e.getMessage(), e);
+        }
+		//--
+        
+		return null;
 	}
 
 	public void setDbConnection(Connection dbConn) {

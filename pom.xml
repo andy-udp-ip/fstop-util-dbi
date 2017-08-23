@@ -80,8 +80,8 @@
 
   <repositories>
     <repository>
-        <id>fstop-util-base64-mvn-repo</id>
-        <url>https://raw.github.com/andy-udp-ip/fstop-util-base64/mvn-repo/</url>
+        <id>fstop-util-prop-mvn-repo</id>
+        <url>https://raw.github.com/andy-udp-ip/fstop-util-prop/mvn-repo/</url>
         <!-- 
         <releases>
             <enabled>true</enabled>
@@ -92,6 +92,10 @@
             <updatePolicy>always</updatePolicy>
         </snapshots>
         -->
+    </repository>
+    <repository>
+        <id>fstop-util-string-mvn-repo</id>
+        <url>https://raw.github.com/andy-udp-ip/fstop-util-string/mvn-repo/</url>
     </repository>
   </repositories>
 
@@ -226,6 +230,13 @@
     <dependency>
       <groupId>tw.com.fstop</groupId>
       <artifactId>fstop-util-string</artifactId>
+      <version>1.0.1</version>
+      <scope>compile</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>tw.com.fstop</groupId>
+      <artifactId>fstop-util-prop</artifactId>
       <version>1.0.1</version>
       <scope>compile</scope>
     </dependency>

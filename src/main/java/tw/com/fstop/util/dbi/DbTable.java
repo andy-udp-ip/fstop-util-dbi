@@ -2,10 +2,16 @@ package tw.com.fstop.util.dbi;
 
 import java.util.Map;
 
+/**
+ * Store db table information.
+ * 
+ * @since 1.0.0
+ */
 public class DbTable 
 {
 	String productName;
 	String name;
+	String dbName;
 	Map<String, DbTableFieldInfo> keyFields;
 	Map<String, DbTableFieldInfo> fields;
 	
@@ -33,6 +39,14 @@ public class DbTable
 	public void setFields(Map<String, DbTableFieldInfo> fields) {
 		this.fields = fields;
 	}
+    public String getDbName()
+    {
+        return dbName;
+    }
+    public void setDbName(String dbName)
+    {
+        this.dbName = dbName;
+    }
 	
 	
 	

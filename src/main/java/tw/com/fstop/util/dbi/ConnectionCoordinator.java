@@ -18,9 +18,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 import tw.com.fstop.util.PropUtil;
-import tw.com.fstop.util.StrUtil;
+
 
 /**
  * Data base connection coordinator.
@@ -40,7 +42,7 @@ public class ConnectionCoordinator
 {
 	//private static Logger logger = Logger.getLogger(ConnectionCoordinator.class.getName());
 	private static Logger log = LoggerFactory.getLogger(ConnectionCoordinator.class);
-	static String DB_SETTING_PROP = "dbi.properties";
+	static final String DB_SETTING_PROP = "dbi.properties";
 	
 	static Properties prop = null;
 	
@@ -57,92 +59,78 @@ public class ConnectionCoordinator
         }
 	}
 	
+	//index DbConnectionInfo by dbName
 	static Map<String, DbConnectionInfo> info = Collections.synchronizedMap(new HashMap<String, DbConnectionInfo>());
 	
-	public static DbConnectionInfo setParam(String jndi, 
+	public static DbConnectionInfo setParam(String dbName,
+	                                        String jndi, 
 											String url, 
 											String driver, 
 											String user, 
 											String password,
+											String poolName,
 											DataSource ds,
 											Connection connection
 											)
 	{
 		DbConnectionInfo dbInfo = new DbConnectionInfo();
+		dbInfo.setDbName(dbName);
 		dbInfo.setDbPassword(password);
 		dbInfo.setDbUser(user);
 		dbInfo.setJdbcDriver(driver);
 		dbInfo.setJdbcUrl(url);
 		dbInfo.setJndiName(jndi);
+		dbInfo.setPoolName(poolName);
 		dbInfo.setDataSource(ds);
 		dbInfo.setConnection(connection);
 		return dbInfo;
 	}
 	
 	
-	public static DbConnectionInfo getDbConnectionInfo(String tableName)
+	public static DbConnectionInfo getDbConnectionInfo(String dbName, String tableName)
 	{
-		//先試著以 tableName 來取設定，若是有值，則表示特殊設定
-		String url = null; //prop.getProperty(tableName + ".db.url", "");
-		String jndi = null; //prop.getProperty(tableName + ".db.jndiname", "");	
+		String url = null; 
+		String jndi = null;	
 		String driver = null;
 		String user = null;
 		String password = null;
+		String poolName = null;
 		DataSource ds = null;
 		Connection conn = null;
 		DbConnectionInfo dbInfo = null;
 		
-		//當  tableName 為空字串，表示使用預設值
-		if (StrUtil.isEmpty(tableName))
-		{
-		    if (info.get("_default") == null)
-		    {
-		        jndi = prop.getProperty("default.db.jndiname", "");
-		        driver = prop.getProperty("default.db.driver", "");
-		        url = prop.getProperty("default.db.url", "");
-		        user = prop.getProperty("default.db.user", "");
-		        password = prop.getProperty("default.db.password", "");	
-		        dbInfo = setParam(jndi, driver, url, user, password, ds, conn);
-		        info.put("_default", dbInfo);
-		    }
-		    else
-		    {
-		        dbInfo = info.get("_default");					
-		    }
-		}
-		else
-		{
-		    if (info.get(tableName) == null)
-		    {
-		        jndi = prop.getProperty(tableName + ".db.jndiname", "");
-		        driver = prop.getProperty(tableName + ".db.driver", "");
-		        url = prop.getProperty(tableName + ".db.url", "");
-		        user = prop.getProperty(tableName + ".db.user", "");
-		        password = prop.getProperty(tableName + ".db.password", "");
-		        dbInfo = setParam(jndi, driver, url, user, password, ds, conn);
-		        info.put(tableName, dbInfo);
-		    }
-		    else
-		    {
-		        dbInfo = info.get(tableName);					
-		    }
-		}
+        if (info.get(dbName) == null)
+        {
+            jndi = prop.getProperty(dbName + ".db.jndiname", "");
+            driver = prop.getProperty(dbName + ".db.driver", "");
+            url = prop.getProperty(dbName + ".db.url", "");
+            user = prop.getProperty(dbName + ".db.user", "");
+            password = prop.getProperty(dbName + ".db.password", "");
+            poolName = prop.getProperty(dbName + ".db.pool", "");
+            dbInfo = setParam(dbName, jndi, driver, url, user, password, poolName, ds, conn);
+
+            info.put(dbName, dbInfo);
+        }
+        else
+        {
+            dbInfo = info.get(dbName);
+        }
 		
 		return dbInfo;
 	}//getDbConnectionInfo
 	
 	
-	public static Connection getPooledDbConnection(String tableName) throws SQLException
+	public static Connection getPooledDbConnection(String dbName, String tableName) throws SQLException
 	{
 		DbConnectionInfo dbInfo = null;
-		dbInfo = getPooledDbConnectionInfo(tableName);	
+		dbInfo = getPooledDbConnectionInfo(dbName, tableName);	
 		return dbInfo.getDataSource().getConnection();
 	}
 	
-	public static Connection getJndiDbConnection(String tableName) throws NamingException, SQLException, ClassNotFoundException
+	public static Connection getJndiDbConnection(String dbName, String tableName) throws NamingException, SQLException, ClassNotFoundException
 	{
 		DbConnectionInfo dbInfo = null;
-		dbInfo = getDbConnectionInfo(tableName);	
+		dbInfo = getDbConnectionInfo(dbName, tableName);	
 		if (dbInfo.isUseJndi())
 		{
 			if (dbInfo.getDataSource() == null)
@@ -156,9 +144,9 @@ public class ConnectionCoordinator
 		return null;
 	}
 	
-	public static DbConnectionInfo getJdbcDbConnection(String tableName) throws SQLException, ClassNotFoundException
+	public static DbConnectionInfo getJdbcDbConnection(String dbName, String tableName) throws SQLException, ClassNotFoundException
 	{
-		DbConnectionInfo dbInfo = getDbConnectionInfo(tableName);
+		DbConnectionInfo dbInfo = getDbConnectionInfo(dbName, tableName);
 		Connection conn = null;
 		Class.forName(dbInfo.getJdbcDriver());
 		conn = DriverManager.getConnection(
@@ -172,45 +160,70 @@ public class ConnectionCoordinator
 	
 	
 	
-	public static DbConnectionInfo getPooledDbConnectionInfo(String tableName)
+	public static DbConnectionInfo getPooledDbConnectionInfo(String dbName, String tableName)
 	{
 		DataSource ds = null;
 		DbConnectionInfo dbInfo = null;		
 		
-		//以預設值來處理
-		tableName = "";
-		dbInfo = getDbConnectionInfo(tableName);
-		if (StrUtil.isEmpty(tableName))
-		{
-		    if (dbInfo.getDataSource() == null)
-		    {
-		        ds = new ComboPooledDataSource();										
-		        dbInfo.setDataSource(ds);
-
-		        ComboPooledDataSource dump = (ComboPooledDataSource) ds;
-		        log.debug(String.format("getMinPoolSize=%d", dump.getMinPoolSize()));
-		        log.debug(String.format("getMaxPoolSize=%d", dump.getMaxPoolSize()));
-		        log.debug(String.format("getMaxStatements=%d", dump.getMaxStatements()));
-		        log.debug(String.format("getMaxStatementsPerConnection=%d", dump.getMaxStatementsPerConnection()));	
-		    }
-		}
-		else
-		{
-		    //若是 tableName 未設定，則會自動使用 default pool
-		    if (dbInfo.getDataSource() == null)
-		    {
-		        ds = new ComboPooledDataSource(tableName);					
-		        dbInfo.setDataSource(ds);	
-
-		        ComboPooledDataSource dump = (ComboPooledDataSource) ds;
-		        log.debug(String.format("getMinPoolSize=%d", dump.getMinPoolSize()));
-		        log.debug(String.format("getMaxPoolSize=%d", dump.getMaxPoolSize()));
-		        log.debug(String.format("getMaxStatements=%d", dump.getMaxStatements()));
-		        log.debug(String.format("getMaxStatementsPerConnection=%d", dump.getMaxStatementsPerConnection()));
-		    }
-		}
+		dbInfo = getDbConnectionInfo(dbName, tableName);
 		
+        if (dbInfo.getDataSource() == null)
+        {
+            String poolName = dbInfo.getPoolName();
+            if ("c3p0".equalsIgnoreCase(poolName))
+            {
+                ds = getC3p0DataSource(dbInfo);
+                dbInfo.setDataSource(ds);
+            }
+            else if ("hikari".equalsIgnoreCase(poolName))
+            {
+                ds = getHikariDataSource(dbInfo);
+                dbInfo.setDataSource(ds);
+            }
+        }
+
 		return dbInfo;
 	}//getPooledDbConnectionInfo
+	
+	static DataSource getC3p0DataSource(DbConnectionInfo dbInfo)
+	{
+	    DataSource ds = null;
+
+	    // ds = new ComboPooledDataSource(); //c3p0 use default setting
+        ds = new ComboPooledDataSource(dbInfo.getDbName());
+
+        ComboPooledDataSource dump = (ComboPooledDataSource) ds;
+        log.debug(String.format("getMinPoolSize=%d", dump.getMinPoolSize()));
+        log.debug(String.format("getMaxPoolSize=%d", dump.getMaxPoolSize()));
+        log.debug(String.format("getMaxStatements=%d", dump.getMaxStatements()));
+        log.debug(String.format("getMaxStatementsPerConnection=%d", dump.getMaxStatementsPerConnection()));                
+
+        return ds;
+	}
+	
+	static DataSource getHikariDataSource(DbConnectionInfo dbInfo)
+	{
+        DataSource ds = null;
+        //Hikari config 以 dbName.hikari.properties 來命名
+        String cfg = "/" + dbInfo.getDbName() + ".hikari.properties";
+
+        HikariConfig config = new HikariConfig(cfg);
+//        config.setMaximumPoolSize(10);
+//        config.setDataSourceClassName(dbInfo.jdbcDriver);
+//        config.setJdbcUrl(dbInfo.jdbcUrl);
+//        config.addDataSourceProperty("user", dbInfo.getDbUser());
+//        config.addDataSourceProperty("password", dbInfo.getDbPassword());
+
+        ds = new HikariDataSource(config);  //pass in HikariConfig to HikariDataSource
+        HikariDataSource dump = (HikariDataSource) ds;
+        log.debug(String.format("getMaximumPoolSize=%d", dump.getMaximumPoolSize()));
+        log.debug(String.format("getMinimumIdle=%d", dump.getMinimumIdle()));
+        log.debug(String.format("getIdleTimeout=%d", dump.getIdleTimeout()));
+        log.debug(String.format("getMaxLifetime=%d", dump.getMaxLifetime()));                
+
+        return ds;
+	}
+	
+	
 	
 }

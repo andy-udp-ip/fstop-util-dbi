@@ -36,34 +36,77 @@ import tw.com.fstop.util.StrUtil;
  * JdbcDao 的抽象類別，萬用 DBI，功能非常強大。
  * 用法就是繼承這個類別，然後子類別就基本功能都有了。
  * 支援 JNDI, jdbc 雙模式, 並具備 cache 多組 meta-data 的功能。
+ * 
+ * DB NAME:
+ *   db name 主要是用來區分 db table 與 connection。
+ *   因為一般的 DAO 只會對映到一個 DB，所以 db name 預設值並不需要於 DAO 指定。
+ *   預設的 db name 為 "_default"。
+ * 
  * </pre>
  * @author andy
  *
  */
-abstract public class BaseJdbcDao 
+public abstract class BaseJdbcDao 
 {
     //Log4j
 	//private final static Logger log = Logger.getLogger(BaseJdbcDao.class.getName());
     //Slf4j
     private final static Logger log = LoggerFactory.getLogger(BaseJdbcDao.class);
 	
-	static String TABLE_NAME = "";
-
-	static String DEF_JNDI_NAME = "java:comp/env/jdbc/goservice";
-	static String DEF_JDBC_DRIVER = "net.sourceforge.jtds.jdbc.Driver";
-	static String DEF_DB_URL = "jdbc:jtds:sqlserver://192.168.139.130:1433/goservice";
-	static String DEF_DB_USER = "goxxxxx";
-	static String DEF_DB_PASSWORD = "xxxxxx";
-	static Boolean IS_USE_JNDI = false;
-	
 	static String PRODUCT_NAME_SQLSERVER = "Microsoft SQL Server";
 	
-	public static final String ENCODING="utf8";
+	static final String DEF_DB_NAME = "_default"; 
 	
-	//static Map<String, DbTableFieldInfo> keyFields = new LinkedHashMap<String, DbTableFieldInfo>();
-	//static Map<String, DbTableFieldInfo> fields = new HashMap<String, DbTableFieldInfo>();
-	static Map<String, DbTable> tables = Collections.synchronizedMap(new LinkedHashMap<String, DbTable>());
+	//static Map<String, DbTable> tables = Collections.synchronizedMap(new LinkedHashMap<String, DbTable>());
+    static Map<String, Map<String, DbTable>> tables = Collections.synchronizedMap(new HashMap<String, Map<String, DbTable>>());
 	
+    String schema = "";
+    String jdbcDriver = null;
+    String jdbcUrl = null;
+    String dbUser = null;
+    String dbPassword = null;
+    Connection dbConnection = null;
+    DataSource dataSource = null;
+    Boolean useJNDI = false;
+    String jndiName = null;
+    String queryHint1 = "";
+    String queryHint2 = ""; 
+    String updateHint1 = "";
+    String updateHint2 = "";    
+    Boolean useHint = true;
+    Boolean useCoordinator = true;
+    String encoding="utf8"; //資料庫編碼，目前未使用
+    String dbName;
+    
+    /**
+     * 由子類別實作，取得 table 名稱
+     * @return      實際物件代表的 table name
+     */
+    protected abstract String getTableName();
+    
+    /**
+     * Get db table information. Access to global cache.
+     * @param dbName db name
+     * @return db table information
+     */
+    Map<String, DbTable> getTableInfo(String dbName)
+    {
+        if (tables.get(dbName) == null)
+        {            
+            tables.put(dbName, Collections.synchronizedMap(new LinkedHashMap<String, DbTable>()));
+        }
+        return tables.get(dbName);
+    }
+    
+    /**
+     * Get db table information. Access to global cache.
+     * @return db table information
+     */
+    Map<String, DbTable> getTableInfo()
+    {
+        return getTableInfo(getDbName());
+    }
+    
 	/**
 	 * Loads db table metadata.
 	 * 
@@ -72,16 +115,14 @@ abstract public class BaseJdbcDao
 	 */
 	void loadTableMetaInfo(Connection connection) throws SQLException
 	{		
-		//keyFields.clear();
-		//fields.clear();		
-		tables.get(getTableName()).setName(getTableName());
-		tables.get(getTableName()).getKeyFields().clear();
-		tables.get(getTableName()).getFields().clear();
+	    getTableInfo().get(getTableName()).setName(getTableName());
+	    getTableInfo().get(getTableName()).getKeyFields().clear();
+	    getTableInfo().get(getTableName()).getFields().clear();
 		
 		DatabaseMetaData dbMetaData = connection.getMetaData();	
 	
-		tables.get(getTableName()).setProductName(dbMetaData.getDatabaseProductName());
-		log.debug("ProductName=" + tables.get(getTableName()).getProductName());
+		getTableInfo().get(getTableName()).setProductName(dbMetaData.getDatabaseProductName());
+		log.debug("ProductName=" + getTableInfo().get(getTableName()).getProductName());
 		
 		ResultSet result = null;
 		result = dbMetaData.getTables(null, null, getTableName(), new String [] {"TABLE"});
@@ -111,8 +152,7 @@ abstract public class BaseJdbcDao
 
 	        	log.debug(columnName + " " + typeName + " " + columnSize + " " + scale + " " + isNullable);
 	        	DbTableFieldInfo fieldInfo = new DbTableFieldInfo(columnName, typeName, columnSize, scale, isNullable);
-	        	//fields.put(columnName, fieldInfo);
-	        	tables.get(getTableName()).getFields().put(columnName, fieldInfo);
+	        	getTableInfo().get(getTableName()).getFields().put(columnName, fieldInfo);
 			}
 			
 			log.debug("load keys");
@@ -121,7 +161,7 @@ abstract public class BaseJdbcDao
 			{
 				String columnName =  result2.getString(4).trim();
 				
-				DbTableFieldInfo columnInfo = tables.get(getTableName()).getFields().get(columnName);
+				DbTableFieldInfo columnInfo = getTableInfo().get(getTableName()).getFields().get(columnName);
 				String typeName =  columnInfo.getValueType();
 				Integer keySeq = result2.getInt(5);
 
@@ -129,9 +169,9 @@ abstract public class BaseJdbcDao
 	        	DbTableFieldInfo fieldInfo = new DbTableFieldInfo(columnName, typeName, columnInfo.getSize(), columnInfo.getScale(), columnInfo.getNullable());
 	        	fieldInfo.setKeySeq(keySeq);
 	        	//keyFields.put(columnName, fieldInfo);
-	        	tables.get(getTableName()).getKeyFields().put(columnName, fieldInfo);
+	        	getTableInfo().get(getTableName()).getKeyFields().put(columnName, fieldInfo);
 	        	
-	        	tables.get(getTableName()).getFields().get(columnName).setKeySeq(keySeq);
+	        	getTableInfo().get(getTableName()).getFields().get(columnName).setKeySeq(keySeq);
 			}
         }//while
 	}//loadMetaInfo
@@ -169,7 +209,7 @@ abstract public class BaseJdbcDao
 	{
 		initMetaData();
 		//return keyFields;
-		return tables.get(getTableName()).getKeyFields();
+		return getTableInfo().get(getTableName()).getKeyFields();
 	}
 	
 	/**
@@ -180,55 +220,11 @@ abstract public class BaseJdbcDao
 	{
 		initMetaData();
 		//return fields;
-		return tables.get(getTableName()).getFields();
+		return getTableInfo().get(getTableName()).getFields();
 	}
-	
-	/**
-	 * 由子類別實作，取得 table 名稱
-	 * @return		實際物件代表的 table name
-	 */
-	protected abstract String getTableName();
-	
-	
-	String schema = "";
-	String jdbcDriver = null;
-	String jdbcUrl = null;
-	String dbUser = null;
-	String dbPassword = null;
-	Connection dbConnection = null;
-	DataSource dataSource = null;
-	Boolean useJNDI = false;
-	String jndiName = null;
-	String queryHint1 = "";
-	String queryHint2 = "";	
-	String updateHint1 = "";
-	String updateHint2 = "";	
-	Boolean useHint = true;
-	Boolean useCoordinator = true;
 	
 	public BaseJdbcDao()
 	{
-//		this.jdbcDriver = DEF_JDBC_DRIVER;
-//		this.jndiName = DEF_JNDI_NAME;
-//		this.useJNDI = IS_USE_JNDI;
-//		this.jdbcUrl = DEF_DB_URL;
-//		this.dbUser = DEF_DB_USER;
-//		this.dbPassword = DEF_DB_PASSWORD;	
-
-	    //此時 getTableName 不會有值
-//		DbConnectionInfo dbInfo = ConnectionCoordinator.getDbConnectionInfo(getTableName());
-//		this.jdbcDriver = dbInfo.getJdbcDriver();
-//		this.jndiName = dbInfo.getJndiName();
-//		this.dbUser = dbInfo.getDbUser();
-//		this.dbPassword = dbInfo.getDbPassword();
-//		if (this.jndiName.isEmpty())
-//		{
-//			this.useJNDI = false;
-//		}
-//		else
-//		{
-//			this.useJNDI = true;			
-//		}
 	}
 	
 	public BaseJdbcDao(String jdbcDriver, String jdbcUrl, String dbUser, String dbPassword)
@@ -261,9 +257,9 @@ abstract public class BaseJdbcDao
 	public void setHint()
 	{
 		clearHint();
-		if (tables.get(getTableName()) != null && useHint == true)
+		if (getTableInfo().get(getTableName()) != null && useHint == true)
 		{
-			String productName = tables.get(getTableName()).getProductName();
+			String productName = getTableInfo().get(getTableName()).getProductName();
 			if (productName.equalsIgnoreCase(PRODUCT_NAME_SQLSERVER))
 			{
 				queryHint1 = "";
@@ -291,7 +287,7 @@ abstract public class BaseJdbcDao
 	void initMetaData()
 	{
 		//若是不存在則先新增
-		if (tables.get(getTableName()) == null)
+		if (getTableInfo().get(getTableName()) == null)
 		{
 		    log.debug("loading table info...");
 			Map<String, DbTableFieldInfo> fields = Collections.synchronizedMap(new LinkedHashMap<String, DbTableFieldInfo>());
@@ -299,13 +295,13 @@ abstract public class BaseJdbcDao
 			DbTable table = new DbTable();
 			table.setFields(fields);
 			table.setKeyFields(keyFields);
-			tables.put(getTableName(), table);			
+			getTableInfo().put(getTableName(), table);			
 		}
 		
 		//table 不一定有 key 但一定要有欄位
 		//如果欄位 cache 為空，則載入
 		//if (fields.isEmpty())
-		if (tables.get(getTableName()).getFields().isEmpty())
+		if (getTableInfo().get(getTableName()).getFields().isEmpty())
 		{
 			try 
 			{
@@ -682,7 +678,6 @@ abstract public class BaseJdbcDao
 			}
 			
 			log.debug("findByKey=" + sql);
-			System.out.println(sql);
 			stmt = new JdbcNamedParameterStatement(getDbConnection(), sql);
 			
 			if (StrUtil.isNotEmpty(cond))
@@ -893,6 +888,7 @@ abstract public class BaseJdbcDao
 						
 			String sql = "select " + queryHint1 + " count(*) from " + getTableName() + queryHint2 + where;
 
+			log.debug("getRecordCount=" + sql);
 			stmt = new JdbcNamedParameterStatement(getDbConnection(), sql);
 			setParam(stmt, map);
 			rs=stmt.executeQuery();
@@ -911,7 +907,7 @@ abstract public class BaseJdbcDao
 		{
 			e.printStackTrace();
 			//log.debug(e);
-	         log.error(e.getMessage(), e);
+	        log.error(e.getMessage(), e);
 
 		}
 		finally
@@ -931,6 +927,59 @@ abstract public class BaseJdbcDao
 		
 		return ret;
 	}  //getRecordCount
+	
+	/**
+	 * Get record count by custom sql.
+	 * @param sql sql statement
+	 * @param map parameter map
+	 * @return record count
+	 */
+    public long getRecordCountBySQL(String sql, Map<String, Object> map)
+    {
+        ResultSet rs = null;
+        JdbcNamedParameterStatement stmt = null;
+        long ret = 0;
+        try
+        {
+            log.debug("getRecordCountBySQL=" + sql);
+            stmt = new JdbcNamedParameterStatement(getDbConnection(), sql);
+
+            setParam(stmt, map);
+            rs=stmt.executeQuery();
+            
+            ScalarHandler<Long> scalar = new ScalarHandler<Long>();
+            ret = ObjectConverter.convert(scalar.handle(rs), Long.class);
+            
+            rs.close();
+            rs = null;
+            
+            stmt.close();
+            stmt = null;
+
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            log.error(e.getMessage(), e);
+        }
+        finally
+        {
+            if (rs != null) 
+            {
+                try { rs.close(); } catch (SQLException e) { ; }
+                rs = null;
+            }
+            if (stmt != null) 
+            {
+                try { stmt.close(); } catch (SQLException e) { ; }
+                stmt = null;
+            }
+            closeConnection();          
+        }
+        
+        return ret;
+    }  //getRecordCountBySQL
+	
 	
 	/**
 	 * 若沒有 key，則與 insert 相同
@@ -1021,7 +1070,7 @@ abstract public class BaseJdbcDao
 		{
 			e.printStackTrace();
 			//log.debug(e);
-	         log.error(e.getMessage(), e);
+	        log.error(e.getMessage(), e);
 
 		}
 		finally
@@ -1049,7 +1098,7 @@ abstract public class BaseJdbcDao
 		try
 		{			
 			String sql = getInsertStatement();
-			log.debug("insert=" + sql);
+			log.debug("insertByAllColumn=" + sql);
 			stmt = new JdbcNamedParameterStatement(getDbConnection(), sql);
 			setParam(stmt, map);
 			ret = stmt.executeUpdate();
@@ -1058,7 +1107,7 @@ abstract public class BaseJdbcDao
 		{
 			e.printStackTrace();
 			//log.debug(e);
-	         log.error(e.getMessage(), e);
+	        log.error(e.getMessage(), e);
 
 		}
 		finally
@@ -1132,6 +1181,43 @@ abstract public class BaseJdbcDao
 		return ret;		
 	}//update
 	
+    /**
+     * 允許 key 欄位被  update 的功能 
+     * @param sql sql statement  
+     * @param map parameter map
+     * @return affected record numbers
+     */
+    public int updateEx(String sql, Map<String, Object> map)
+    {
+        int ret = 0;
+        JdbcNamedParameterStatement stmt = null;
+        try
+        {
+            log.debug("updateEx=" + sql);
+            stmt = new JdbcNamedParameterStatement(getDbConnection(), sql);         
+            setParam(stmt, map);
+            ret = stmt.executeUpdate();
+            stmt.close();
+            stmt = null;
+            
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            log.error(e.getMessage(), e);
+        }
+        finally
+        {
+            if (stmt != null) 
+            {
+                try { stmt.close(); } catch (SQLException e) { ; }
+                stmt = null;
+            }
+            closeConnection();
+        }
+        return ret;     
+    }//updateEx
+	
 	/**
 	 * 當資料不存在時新增一筆，若存在時則更新
 	 * @param map parameter map
@@ -1153,6 +1239,11 @@ abstract public class BaseJdbcDao
 		return 0;
 	}  //save
 	
+	/**
+	 * Delete data by input key value.
+	 * @param map data map contain key fields and values
+	 * @return affected record numbers
+	 */
 	public int deleteByKey(Map<String, Object> map)
 	{
 		int ret = 0;
@@ -1211,6 +1302,86 @@ abstract public class BaseJdbcDao
 	}  //deleteByKey
 	
 	/**
+	 * Delete table data by input where condition and parameter data.
+	 * @param where sql condition
+	 * @param map parameter data
+	 * @return affected record numbers
+	 */
+    public int deleteByWhere(String where, Map<String, Object> map) 
+    {
+        int ret = 0;
+        JdbcNamedParameterStatement stmt = null;
+        try
+        {
+            String sql = null;
+            sql = "delete from " + getTableName() + " ";
+            if (StrUtil.isNotEmpty(where))
+            {
+                sql = sql + where;              
+            }
+            
+            log.debug("deleteByWhere=" + sql);
+            stmt = new JdbcNamedParameterStatement(getDbConnection(), sql);
+
+            setParam(stmt, map);
+            
+            ret = stmt.executeUpdate(); 
+            stmt.close();
+            stmt = null;
+            
+        }
+        catch(Exception e)
+        {
+            log.error("deleteByWhere Error", e);
+            ret = -1;
+        }
+        finally
+        {
+            if (stmt != null) 
+            {
+                try { stmt.close(); } catch (SQLException e) { ; }
+                stmt = null;
+            }
+            closeConnection();
+        }
+        return ret;
+    }  //deleteByWhere
+	
+    /**
+     * Delete table data by input sql statement and parameter data.
+     * @param sql delete sql statement 
+     * @param map parameter data
+     * @return affected record numbers
+     */
+    public int deleteBySQL(String sql, Map<String, Object> map)
+    {       
+        JdbcNamedParameterStatement stmt = null;
+        try
+        {
+            log.debug("deleteBySQL=" + sql);
+            stmt = new JdbcNamedParameterStatement(getDbConnection(), sql);
+            setParam(stmt, map);
+            return stmt.executeUpdate();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            log.error("deleteBySQL Error", e);
+            return 0;
+        }
+        finally
+        {
+            if (stmt != null) 
+            {
+                try { stmt.close(); } catch (SQLException e) { ; }
+                stmt = null;
+            }
+            closeConnection();
+        }
+    }//deleteBySQL
+    
+	
+	/**
 	 * Check if data already exist in table.
 	 * @param map parameter map
 	 * @return true/false
@@ -1224,6 +1395,86 @@ abstract public class BaseJdbcDao
 		}
 		return true;
 	}
+	
+    /**
+     * 執行 store procedure
+     * 支援的 DB
+     *  my sql : "CALL sp_xxx(?,?,?,?)"
+     *  sql server : "EXEC sp_xxx ?,?,?,?"
+     * 
+     * @param sql       store procedure or function
+     * @param map       parameters
+     * @return result data
+     */
+    public List<Map<String, Object>> execProc(String sql, Map<String, Object> map)
+    {       
+        ResultSet rs = null;
+        JdbcNamedParameterStatement stmt = null;
+        try
+        {
+            String dbName = getTableInfo().get(getTableName()).getProductName();
+            log.debug("db name=" + dbName);
+            String exec = "CALL ";
+            String ql = sql;
+            log.debug("sql=" + sql);
+            if (dbName.equalsIgnoreCase(PRODUCT_NAME_SQLSERVER))
+            {
+                exec = "EXEC ";
+                
+                //將 func(a,b,c) 格式 改為 func a,b,c
+                int f = sql.indexOf("(");
+                if (f > 0)
+                {
+                    ql = sql.substring(0, f);                   
+                }
+                int l = sql.lastIndexOf(")");
+                if (l > 0)
+                {
+                    ql = ql + " " + sql.substring(f + 1, l);    
+                }
+                if (l < sql.length() - 1)
+                {
+                    ql = ql + " " + sql.substring(l + 1, sql.length());
+                }
+                
+            }
+            sql = exec + ql;
+                    
+            log.debug("sql=" + sql);
+            stmt = new JdbcNamedParameterStatement(getDbConnection(), sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            
+            setParam(stmt, map);
+            rs=stmt.executeQuery();
+            List<Map<String, Object>> list =  makeResultList(rs);
+            
+            rs.close();
+            rs = null;
+            stmt.close();
+            stmt = null;
+
+            return list;            
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            log.error("execProc Error", e);
+        }
+        finally
+        {
+            if (rs != null) 
+            {
+                try { rs.close(); } catch (SQLException e) { ; }
+                rs = null;
+            }
+            if (stmt != null) 
+            {
+                try { stmt.close(); } catch (SQLException e) { ; }
+                stmt = null;
+            }
+            closeConnection();
+        }
+        return null;
+    }//execProc
 	
 	
 	public String getSchema() {
@@ -1280,8 +1531,9 @@ abstract public class BaseJdbcDao
 	 */
 	public Connection getDbConnection() 
 	{
-		System.out.println("getTableName=" + getTableName() + " use coordinator=" + this.useCoordinator);
-
+		//System.out.println("getTableName=" + getTableName() + " use coordinator=" + this.useCoordinator);
+	    log.debug("getTableName=" + getTableName() + " use coordinator=" + this.useCoordinator);
+	    
 		//在此處設定 jdbc 連線資訊，就不用在子類別個設定
 		if (this.useCoordinator == false)
         {   
@@ -1292,9 +1544,11 @@ abstract public class BaseJdbcDao
         DbConnectionInfo dbInfo = null;
         try 
         {
+            //未設定 db user 表示未設定相關 db 資訊
             if (StrUtil.isEmpty(this.dbUser))
             {
-                dbInfo = ConnectionCoordinator.getPooledDbConnectionInfo(getTableName());
+                dbInfo = ConnectionCoordinator.getPooledDbConnectionInfo(getDbName(), getTableName());
+                
                 //dbInfo = ConnectionCoordinator.getDbConnectionInfo(getTableName());
                 this.jdbcDriver = dbInfo.getJdbcDriver();
                 this.jndiName = dbInfo.getJndiName();
@@ -1306,7 +1560,7 @@ abstract public class BaseJdbcDao
             
             if (dbConnection == null || dbConnection.isClosed())
             {
-                dbConnection = ConnectionCoordinator.getPooledDbConnection(getTableName());             
+                dbConnection = ConnectionCoordinator.getPooledDbConnection(getDbName(), getTableName());             
                 //dbConnection = ConnectionCoordinator.getJndiDbConnection(getTableName());             
             }
             
@@ -1337,6 +1591,31 @@ abstract public class BaseJdbcDao
 	public void setUseHint(Boolean useHint) {
 		this.useHint = useHint;
 	}
+
+    public String getEncoding()
+    {
+        return encoding;
+    }
+
+    public void setEncoding(String encoding)
+    {
+        this.encoding = encoding;
+    }
+
+    public String getDbName()
+    {
+        if (dbName == null || dbName.isEmpty())
+        {
+            dbName = DEF_DB_NAME;  //always has default value
+        }
+        return dbName;
+    }
+
+    public void setDbName(String dbName)
+    {
+        this.dbName = dbName;
+    }
+	
 	
 	
 }

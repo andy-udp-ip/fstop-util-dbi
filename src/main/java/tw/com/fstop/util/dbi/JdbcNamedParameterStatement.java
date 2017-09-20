@@ -26,7 +26,8 @@ public class JdbcNamedParameterStatement
     @SuppressWarnings("rawtypes")
     private final Map indexMap;
 
-
+    private int fetchSize = 10;
+    
     /**
      * Creates a NamedParameterStatement.  Wraps a call to
      * c.{@link Connection#prepareStatement(java.lang.String) prepareStatement}.
@@ -40,8 +41,27 @@ public class JdbcNamedParameterStatement
         indexMap=new HashMap();
         String parsedQuery=parse(query, indexMap);
         statement=connection.prepareStatement(parsedQuery);
+        statement.setFetchSize(fetchSize);
     }
 
+    /**
+     * Creates a NamedParameterStatement.  Wraps a call to
+     * c.{@link Connection#prepareStatement(java.lang.String) prepareStatement}.
+     * 
+     * @param connection the database connection
+     * @param query the parameterized query
+     * @param resultSetType result set type
+     * @param resultSetConcurrency result set concurrency
+     * @throws SQLException if the statement could not be created
+     */
+    @SuppressWarnings("rawtypes")
+    public JdbcNamedParameterStatement(Connection connection, String query, int resultSetType, int resultSetConcurrency) throws SQLException 
+    {
+        indexMap=new HashMap();
+        String parsedQuery=parse(query, indexMap);
+        statement=connection.prepareStatement(parsedQuery, resultSetType, resultSetConcurrency);
+        statement.setFetchSize(fetchSize);
+    }
 
     /**
      * Parses a query with named parameters.  The parameter-index mappings are put into the map, and the

@@ -37,13 +37,28 @@ public class BaseJdbcDaoTest
     public void testBaseJdbcDao()
     {
         CommonDao dao = new CommonDao();
-        String tableName = "test";
+        String tableName = "test1";
         Map<String, Object> map = null;
         int cnt = 0;
         dao.setTableName(tableName);
-        map = new HashMap<String, Object>();
-        map.put("t1", 1);
         
+        dao.deleteByWhere("", null);
+        
+        map = new HashMap<String, Object>();
+        map.put("t1", 7);
+        
+        cnt = dao.insert(map);
+        
+        System.out.println(cnt);
+        //--
+        dao = new CommonDao();
+        tableName = "test2";
+        dao.setDbName("test");
+        dao.setTableName(tableName);
+        dao.deleteByWhere("", null);
+        
+        map = new HashMap<String, Object>();
+        map.put("t1", 4);
         cnt = dao.insert(map);
         
         System.out.println(cnt);

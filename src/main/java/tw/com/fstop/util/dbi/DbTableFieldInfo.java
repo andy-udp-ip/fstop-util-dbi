@@ -1,5 +1,10 @@
 package tw.com.fstop.util.dbi;
 
+/**
+ * Store db table field information.
+ *
+ * @since 1.0.0
+ */
 public class DbTableFieldInfo 
 {
     private String keyName;   //KEY

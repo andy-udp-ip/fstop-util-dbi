@@ -24,19 +24,23 @@ import tw.com.fstop.util.StrUtil;
 
 /**
  * Data base connection coordinator.
+ * <pre>
  * Provide data base connections by custom property. 
  * Some property key is hard code and can be modified if required.
  * for Example:
  *   default.db.jndiname
  *   .db.jndiname
- *
+ *   
+ * Load configurations from dbi.properties.
+ * </pre>
+ * 
  * @since 1.0.0
  */
 public class ConnectionCoordinator 
 {
 	//private static Logger logger = Logger.getLogger(ConnectionCoordinator.class.getName());
 	private static Logger log = LoggerFactory.getLogger(ConnectionCoordinator.class);
-	static String DB_SETTING_PROP = "sys.properties";
+	static String DB_SETTING_PROP = "dbi.properties";
 	
 	static Properties prop = null;
 	

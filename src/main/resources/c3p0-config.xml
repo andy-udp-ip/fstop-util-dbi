@@ -6,11 +6,11 @@
     <property name="jdbcUrl">jdbc:hsqldb:hsql://localhost:9001/test</property>	
     <property name="initialPoolSize">10</property>
     <property name="maxIdleTime">30</property>
-    <property name="maxPoolSize">1000</property>
+    <property name="maxPoolSize">100</property>
     <property name="minPoolSize">10</property>
   </default-config>
  
-  <named-config name="sn">
+  <named-config name="test">
     <property name="user">sa</property>
     <property name="password"></property>
     <property name="driverClass">org.hsqldb.jdbcDriver</property>

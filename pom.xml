@@ -244,7 +244,7 @@
 	<dependency>
 	  <groupId>commons-dbutils</groupId>
 	  <artifactId>commons-dbutils</artifactId>
-	  <version>1.6</version>
+	  <version>1.7</version>
 	  <scope>compile</scope>
 	</dependency>
 
@@ -282,12 +282,26 @@
 		<scope>compile</scope>
 	</dependency>
 
+	<!-- JDBC connection pools -->
 	<dependency>
 		<groupId>com.mchange</groupId>
 		<artifactId>c3p0</artifactId>
 		<version>0.9.5</version>
 	</dependency>
-	   
+	
+	<!-- HikariCP for java8. 必需依照不同 jdk 使用不用的版本 -->
+	<dependency>
+        <groupId>com.zaxxer</groupId>
+        <artifactId>HikariCP</artifactId>
+        <version>2.7.1</version>
+    </dependency>	   
+    
+    <!-- JDBC drivers -->
+	<dependency>
+    	<groupId>org.hsqldb</groupId>
+    	<artifactId>hsqldb</artifactId>
+    	<version>2.4.0</version>
+	</dependency>
     
     <dependency>
       <groupId>junit</groupId>

@@ -11,12 +11,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Convert JDBC named parameter to positional parameter.
+ * 
+ *
+ * @since 1.0.0
+ */
 public class JdbcNamedParameterStatement 
 {
     /** The statement this object is wrapping. */
     private final PreparedStatement statement;
 
     /** Maps parameter names to arrays of ints which are the parameter indices.*/
+    @SuppressWarnings("rawtypes")
     private final Map indexMap;
 
 
@@ -27,6 +34,7 @@ public class JdbcNamedParameterStatement
      * @param query      the parameterized query
      * @throws SQLException if the statement could not be created
      */
+    @SuppressWarnings("rawtypes")
     public JdbcNamedParameterStatement(Connection connection, String query) throws SQLException 
     {
         indexMap=new HashMap();
@@ -43,6 +51,7 @@ public class JdbcNamedParameterStatement
      * @param paramMap map to hold parameter-index mappings
      * @return the parsed query
      */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     static final String parse(String query, Map paramMap) 
     {
         // I was originally using regular expressions, but they didn't work well for ignoring
@@ -250,8 +259,7 @@ public class JdbcNamedParameterStatement
 
 
     /**
-     * Executes the statement, which must be an SQL INSERT, UPDATE or DELETE 
-statement;
+     * Executes the statement, which must be an SQL INSERT, UPDATE or DELETE statement;
      * or an SQL statement that returns nothing, such as a DDL statement.
      * @return number of rows affected
      * @throws SQLException if an error occurred
@@ -268,7 +276,8 @@ statement;
      * @throws SQLException if an error occurred
      * @see Statement#close()
      */
-    public void close() throws SQLException {
+    public void close() throws SQLException 
+    {
         statement.close();
     }
 

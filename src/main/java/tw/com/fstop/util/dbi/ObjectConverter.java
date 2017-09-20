@@ -24,7 +24,6 @@ import java.util.Map;
 
 /**
  * Generic object converter.
- * <p>
  * <h3>Use examples</h3>
  * 
  * <pre>
@@ -52,8 +51,7 @@ import java.util.Map;
  * 
  * The method name doesn't matter. It's all about the parameter type and the return type.
  * 
- * @author BalusC
- * @link http://balusc.blogspot.com/2007/08/generic-object-converter.html
+ * @author BalusC "http://balusc.blogspot.com/2007/08/generic-object-converter.html"
  */
 public final class ObjectConverter {
 
@@ -83,6 +81,7 @@ public final class ObjectConverter {
      * Convert the given object value to the given class.
      * @param from The object value to be converted.
      * @param to The type class which the given object should be converted to.
+     * @param <T> target type
      * @return The converted object value.
      * @throws NullPointerException If 'to' is null.
      * @throws UnsupportedOperationException If no suitable converter can be found.

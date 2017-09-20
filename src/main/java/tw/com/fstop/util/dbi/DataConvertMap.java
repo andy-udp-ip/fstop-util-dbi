@@ -31,7 +31,9 @@ public class DataConvertMap<K, V> extends LinkedHashMap<K, V>
 	 * 因為 primitive type 無法直接改變 value，所以必需return後承接
 	 * @param k      map key
 	 * @param obj    型別物件
+	 * @param <T>    target type
 	 * @return       轉換後的值
+	 * 
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> T as(K k, Object obj)

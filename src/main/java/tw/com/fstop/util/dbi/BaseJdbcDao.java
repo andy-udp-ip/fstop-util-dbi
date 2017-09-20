@@ -64,6 +64,12 @@ abstract public class BaseJdbcDao
 	//static Map<String, DbTableFieldInfo> fields = new HashMap<String, DbTableFieldInfo>();
 	static Map<String, DbTable> tables = Collections.synchronizedMap(new LinkedHashMap<String, DbTable>());
 	
+	/**
+	 * Loads db table metadata.
+	 * 
+	 * @param connection db connection
+	 * @throws SQLException sql exception
+	 */
 	void loadTableMetaInfo(Connection connection) throws SQLException
 	{		
 		//keyFields.clear();
@@ -130,6 +136,13 @@ abstract public class BaseJdbcDao
         }//while
 	}//loadMetaInfo
 	
+	/**
+	 * Get db tables.
+	 * 
+	 * @param connection db connection
+	 * @return list of table name
+	 * @throws SQLException sql exception
+	 */
 	public List<String> getTableNameList(Connection connection) throws SQLException
 	{
 		List<String> ret = null;
@@ -148,7 +161,10 @@ abstract public class BaseJdbcDao
 		return ret;
 	}
 	
-	
+	/**
+	 * Get table key fields.
+	 * @return key field information of table
+	 */
 	public Map<String, DbTableFieldInfo> getKeyFields()
 	{
 		initMetaData();
@@ -156,6 +172,10 @@ abstract public class BaseJdbcDao
 		return tables.get(getTableName()).getKeyFields();
 	}
 	
+	/**
+	 * Get table fields.
+	 * @return field information of table
+	 */
 	public Map<String, DbTableFieldInfo> getFields()
 	{
 		initMetaData();
@@ -224,8 +244,8 @@ abstract public class BaseJdbcDao
 	/**
 	 * 為什麼不用只有一個參數的方法？例如 BaseJdbcDao(String jndiName)
 	 * 因為這個方法先留給子類別實作 xxxDao(String tableName)讓子類別好用一點
-	 * @param useJNDI
-	 * @param jndiName
+	 * @param useJNDI use JNDI or not
+	 * @param jndiName JNDI name for jdbc connection
 	 */
 	public BaseJdbcDao(Boolean useJNDI, String jndiName)
 	{
@@ -235,6 +255,9 @@ abstract public class BaseJdbcDao
 		this.useCoordinator = false;
 	}
 	
+	/**
+	 * Set db query and update hint.
+	 */
 	public void setHint()
 	{
 		clearHint();
@@ -250,6 +273,10 @@ abstract public class BaseJdbcDao
 			}
 		}
 	}
+	
+	/**
+	 * Clear db query and update hint.
+	 */
 	public void clearHint()
 	{
 		queryHint1 = "";
@@ -258,6 +285,9 @@ abstract public class BaseJdbcDao
 		updateHint2 = "";		
 	}
 	
+	/**
+	 * Load db metadata.
+	 */
 	void initMetaData()
 	{
 		//若是不存在則先新增
@@ -290,6 +320,16 @@ abstract public class BaseJdbcDao
 		}
 	}
 	
+	/**
+	 * Get db connection.
+	 * @param useJNDI use JNDI or not
+	 * @param jndiName JNDI name for jdbc connection
+	 * @param jdbcDriver jdbc driver
+	 * @param dbUrl jdbc connection url
+	 * @param dbUser db user account
+	 * @param dbPassword db user password
+	 * @return jdbc connection
+	 */
 	public Connection getDbConnection(boolean useJNDI, 
 									String jndiName, 
 									String jdbcDriver,
@@ -340,6 +380,9 @@ abstract public class BaseJdbcDao
 		return dbConnection;
 	}//getDbConnection
 	
+	/**
+	 * Close jdbc connection
+	 */
 	public void closeConnection()
 	{
 		try
@@ -365,6 +408,10 @@ abstract public class BaseJdbcDao
 		
 	}//closeConnection
 	
+	/**
+	 * Output sql exception
+	 * @param se sql exception
+	 */
 	void printSQLException(SQLException se)
 	{
 		// Loop through the SQL Exceptions
@@ -380,8 +427,8 @@ abstract public class BaseJdbcDao
 	/**
 	 * 組成簡單的只有等於的 where 條件，且map key與 欄位名稱 必需相同
 	 * 不考慮 is null 的情形
-	 * @param map
-	 * @return
+	 * @param map parameter map
+	 * @return sql statement
 	 */
     String getEqualCondition(Map<String, Object> map)
 	{
@@ -413,7 +460,7 @@ abstract public class BaseJdbcDao
 
     /**
      * 產生以主鍵值為主的 where 條件
-     * @return
+     * @return sql statement
      */
     String getEqualByKeyCondition()
     {
@@ -440,8 +487,8 @@ abstract public class BaseJdbcDao
 
     /**
      * 產生無條件的 update SQL 語法
-     * @param map
-     * @return
+     * @param map parameter map
+     * @return sql statement
      */
     String getUpdateStatement(Map<String, Object> map)
 	{
@@ -478,8 +525,8 @@ abstract public class BaseJdbcDao
     
     /**
      * 產生以主鍵為主要條件的 update SQL
-     * @param map
-     * @return
+     * @param map parameter map
+     * @return sql statement
      */
     String getUpdateByKeyStatement(Map<String, Object> map)
 	{
@@ -508,7 +555,7 @@ abstract public class BaseJdbcDao
 
     /**
      * 產生 insert SQL 語法
-     * @return
+     * @return sql statement
      */
     String getInsertStatement()
     {
@@ -539,8 +586,8 @@ abstract public class BaseJdbcDao
     
     /**
      * 依照給定的 map 內容產生 insert SQL 語法
-     * @param map
-     * @return
+     * @param map parameter map
+     * @return sql statement
      */
     String getInsertStatement(Map<String, Object> map)
 	{
@@ -576,6 +623,12 @@ abstract public class BaseJdbcDao
 		return ret;
 	}
     
+    /**
+     * Setup named parameter.
+     * @param stmt named parameter statement
+     * @param map parameter map
+     * @throws SQLException sql exception
+     */
     void setParam(JdbcNamedParameterStatement stmt, Map<String, Object> map) throws SQLException
     {
     	if (map == null || map.isEmpty()) return;
@@ -587,6 +640,12 @@ abstract public class BaseJdbcDao
 		}    	
     }
     
+    /**
+     * Setup named parameter by key data.
+     * @param stmt named parameter statement
+     * @param map parameter map
+     * @throws SQLException sql exception
+     */
     void setKeyParam(JdbcNamedParameterStatement stmt, Map<String, Object> map) throws SQLException
     {
     	if (map == null || map.isEmpty()) return;
@@ -600,8 +659,8 @@ abstract public class BaseJdbcDao
 
     /**
      * 以主鍵值搜尋，輸入的 map 中必需有主鍵的欄位
-     * @param map
-     * @return
+     * @param map parameter map
+     * @return result data
      */
 	public Map<String, Object> findByKey(Map<String, Object> map)
 	{
@@ -682,9 +741,9 @@ abstract public class BaseJdbcDao
 	 * Find by custom condition, 其中 map 只有 organizaiton_id 的值   
 	 *   dao.find(" where organization_id=:organization_id ", map);
 	 * </pre>
-	 * @param where
-	 * @param map
-	 * @return
+	 * @param where sql statement
+	 * @param map parameter map
+	 * @return result data
 	 */
 	public List<Map<String, Object>> find(String where, Map<String, Object> map)
 	{		
@@ -741,9 +800,9 @@ abstract public class BaseJdbcDao
     
 	/**
 	 * 採用使用者自行輸入的 SQL 做為查詢依據
-	 * @param sql
-	 * @param map
-	 * @return
+	 * @param sql sql statement
+	 * @param map parameter map
+	 * @return result data
 	 */
 	public List<Map<String, Object>> findBySQL(String sql, Map<String, Object> map)
 	{		
@@ -791,6 +850,12 @@ abstract public class BaseJdbcDao
 		return null;
 	}//findBySQL
 	
+	/**
+	 * Convert ResultSet to List.
+	 * @param rs ResultSet
+	 * @return result data
+	 * @throws SQLException sql exception
+	 */
 	List<Map<String, Object>> makeResultList(ResultSet rs) throws SQLException
 	{
 		MapListHandler handler = new MapListHandler();
@@ -808,7 +873,9 @@ abstract public class BaseJdbcDao
 	
 	/**
 	 * 取得資料庫總筆數
-	 * @return
+	 * @param where sql statement
+	 * @param map parameter map
+	 * @return record count
 	 */
 	public long getRecordCount(String where, Map<String, Object> map)
 	{
@@ -867,8 +934,8 @@ abstract public class BaseJdbcDao
 	
 	/**
 	 * 若沒有 key，則與 insert 相同
-	 * @param map
-	 * @return
+	 * @param map parameter map
+	 * @return affected record numbers
 	 */
 	public int insertKey(Map<String, Object> map)
 	{
@@ -932,8 +999,8 @@ abstract public class BaseJdbcDao
 	}//insertKey
 	
 	/**
-	 * insert into 
-	 * @param map
+	 * insert data into table. 
+	 * @param map parameter map
 	 * @return int 1為成功 ,0為失敗
 	 */
 	public int insert(Map<String, Object> map)
@@ -970,9 +1037,9 @@ abstract public class BaseJdbcDao
 	} //insert
 
 	/**
-	 * insert into 
+	 * insert data into table. 
 	 * 若 Map 欄位不足則會失敗
-	 * @param map
+	 * @param map parameter map
 	 * @return int 1為成功 ,0為失敗
 	 */
 	public int insertByAllColumn(Map<String, Object> map)
@@ -1017,9 +1084,9 @@ abstract public class BaseJdbcDao
 	 *   map.put("unload_time_old", 120);
 	 *   dao.update(" where unload_time=:unload_time_old ", map);
 	 * </pre>
-	 * @param where
-	 * @param map
-	 * @return
+	 * @param where sql statement
+	 * @param map parameter map
+	 * @return affected record numbers
 	 */
 	public int update(String where, Map<String, Object> map)
 	{
@@ -1067,8 +1134,8 @@ abstract public class BaseJdbcDao
 	
 	/**
 	 * 當資料不存在時新增一筆，若存在時則更新
-	 * @param map
-	 * @return
+	 * @param map parameter map
+	 * @return affected record numbers
 	 */
 	public int save(Map<String, Object> map)
 	{
@@ -1143,6 +1210,11 @@ abstract public class BaseJdbcDao
 		return ret;
 	}  //deleteByKey
 	
+	/**
+	 * Check if data already exist in table.
+	 * @param map parameter map
+	 * @return true/false
+	 */
 	public boolean isKeyExist(Map<String, Object> map)
 	{
 		Map<String, Object> m = findByKey(map);
@@ -1202,11 +1274,15 @@ abstract public class BaseJdbcDao
 		this.jndiName = jndiName;
 	}
 
+	/**
+	 * Get db connection by {@link ConnectionCoordinator}.
+	 * @return db connection
+	 */
 	public Connection getDbConnection() 
 	{
 		System.out.println("getTableName=" + getTableName() + " use coordinator=" + this.useCoordinator);
 
-		//TODO 在此處設定 jdbc 連線資訊，就不用在子類別個設定
+		//在此處設定 jdbc 連線資訊，就不用在子類別個設定
 		if (this.useCoordinator == false)
         {   
 	        return getDbConnection(this.useJNDI, this.jndiName, this.jdbcDriver, this.jdbcUrl, this.dbUser, this.dbPassword);		    

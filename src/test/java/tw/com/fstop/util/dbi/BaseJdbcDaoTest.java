@@ -32,7 +32,7 @@ public class BaseJdbcDaoTest
     {
     }
 
-    
+    //TODO complete BaseJdbcDao test case
     @Test
     public void testBaseJdbcDao()
     {

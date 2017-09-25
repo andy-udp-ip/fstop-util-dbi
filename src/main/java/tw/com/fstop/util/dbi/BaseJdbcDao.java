@@ -37,10 +37,18 @@ import tw.com.fstop.util.StrUtil;
  * 用法就是繼承這個類別，然後子類別就基本功能都有了。
  * 支援 JNDI, jdbc 雙模式, 並具備 cache 多組 meta-data 的功能。
  * 
+ * Note：
+ *   請注意有些資料庫 table 與 欄位名稱 大小寫有區分!
+ * 
  * DB NAME:
  *   db name 主要是用來區分 db table 與 connection。
  *   因為一般的 DAO 只會對映到一個 DB，所以 db name 預設值並不需要於 DAO 指定。
  *   預設的 db name 為 "_default"。
+ * 
+ * Tested DB：
+ *   sql server： 2008, 2012, 2016 
+ *   HSQL： 2.4
+ * 
  * 
  * </pre>
  * @author andy
@@ -54,6 +62,7 @@ public abstract class BaseJdbcDao
     private final static Logger log = LoggerFactory.getLogger(BaseJdbcDao.class);
 	
 	static String PRODUCT_NAME_SQLSERVER = "Microsoft SQL Server";
+	static String PRODUCT_NAME_HSQL = "HSQL Database Engine";
 	
 	static final String DEF_DB_NAME = "_default"; 
 	
@@ -77,6 +86,11 @@ public abstract class BaseJdbcDao
     Boolean useCoordinator = true;
     String encoding="utf8"; //資料庫編碼，目前未使用
     String dbName;
+    
+    //for batch insert/update
+    JdbcNamedParameterStatement batchStatement;
+    Connection batchConnection;
+    
     
     /**
      * 由子類別實作，取得 table 名稱
@@ -120,12 +134,15 @@ public abstract class BaseJdbcDao
 	    getTableInfo().get(getTableName()).getFields().clear();
 		
 		DatabaseMetaData dbMetaData = connection.getMetaData();	
-	
-		getTableInfo().get(getTableName()).setProductName(dbMetaData.getDatabaseProductName());
+		String dbProdName = dbMetaData.getDatabaseProductName();
+		getTableInfo().get(getTableName()).setProductName(dbProdName);
 		log.debug("ProductName=" + getTableInfo().get(getTableName()).getProductName());
 		
 		ResultSet result = null;
-		result = dbMetaData.getTables(null, null, getTableName(), new String [] {"TABLE"});
+		
+        result = dbMetaData.getTables(null, null, getTableName(), new String [] {"TABLE"});         
+		
+		
 		while(result.next())
         {
 			String tableName = "";
@@ -513,7 +530,6 @@ public abstract class BaseJdbcDao
 			}
 			
 		}
-
 		ret = ret.substring(0, ret.lastIndexOf(",")) + " ";
 		
 		return ret;
@@ -1049,6 +1065,7 @@ public abstract class BaseJdbcDao
 	
 	/**
 	 * insert data into table. 
+	 * 若 Map 欄位不足則會失敗
 	 * @param map parameter map
 	 * @return int 1為成功 ,0為失敗
 	 */
@@ -1086,27 +1103,27 @@ public abstract class BaseJdbcDao
 	} //insert
 
 	/**
-	 * insert data into table. 
-	 * 若 Map 欄位不足則會失敗
+	 * insert data into table by custom sql.
+	 * 
 	 * @param map parameter map
 	 * @return int 1為成功 ,0為失敗
 	 */
-	public int insertByAllColumn(Map<String, Object> map)
+	public int insert(String sql, Map<String, Object> map)
 	{
 		int ret = 0;
 		JdbcNamedParameterStatement stmt = null;
 		try
-		{			
-			String sql = getInsertStatement();
-			log.debug("insertByAllColumn=" + sql);
+		{						
+			log.debug("custom insert=" + sql);
 			stmt = new JdbcNamedParameterStatement(getDbConnection(), sql);
 			setParam(stmt, map);
 			ret = stmt.executeUpdate();
+			stmt.close();
+            stmt = null;			
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			//log.debug(e);
 	        log.error(e.getMessage(), e);
 
 		}
@@ -1120,7 +1137,88 @@ public abstract class BaseJdbcDao
 			closeConnection();
 		}
 		return ret;				
-	} //insertByAllColumn
+	} //custom insert 
+	
+	/**
+	 * Initialize batch operation.
+	 * 
+	 * @param sql insert sql statement.
+	 * @throws SQLException sql exception
+	 */
+	public void startBatch(String sql) throws SQLException
+	{
+	    batchConnection = getDbConnection();
+	    batchConnection.setAutoCommit(false);
+	    batchStatement = new JdbcNamedParameterStatement(batchConnection, sql);
+	}  //startBatchInsert
+	
+	/**
+	 * Add data to batch statement.
+	 * @param map data add to batch statement
+	 * @throws SQLException sql exception
+	 */
+	public void addBatch(Map<String, Object> map) throws SQLException
+	{
+        setParam(batchStatement, map);
+        batchStatement.addBatch();
+	}
+	
+	/**
+	 * Abort batch operation.
+	 * 
+	 */
+	public void abortBatch()
+	{
+        if (batchStatement != null) 
+        {
+            try { batchStatement.close(); } catch (SQLException e) { ; }
+            batchStatement = null;
+        }
+        if (batchConnection != null) 
+        {
+            try { batchConnection.close(); } catch (SQLException e) { ; }
+            batchConnection = null;
+        }
+	}  //abortBatchInsert
+	
+	/**
+	 * End of batch operation.
+	 * @return returns update counts for each statement
+	 * @throws SQLException sql exceptoin
+	 */
+	public int[] endBatch() throws SQLException
+	{
+	    int[] ret = null;
+	    try
+	    {
+	        ret = batchStatement.executeBatch();
+	        batchConnection.commit();
+	        batchConnection.setAutoCommit(true);
+	    }
+	    catch(SQLException  e)
+	    {
+            e.printStackTrace();
+            log.error(e.getMessage(), e);
+	        batchConnection.rollback();
+	    }
+	    finally
+	    {
+	        
+            if (batchStatement != null) 
+            {
+                try { batchStatement.close(); } catch (SQLException e) { ; }
+                batchStatement = null;
+            }
+            if (batchConnection != null) 
+            {
+                try { batchConnection.close(); } catch (SQLException e) { ; }
+                batchConnection = null;
+            }
+	    }
+	    
+	    return ret;
+	}  //endBatch
+	
 	
 	/**
 	 * 更新資料

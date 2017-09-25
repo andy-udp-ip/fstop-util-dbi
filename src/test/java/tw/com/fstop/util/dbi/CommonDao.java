@@ -29,5 +29,4 @@ public class CommonDao extends BaseJdbcDao
 
     
     
-    
 }

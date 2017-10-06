@@ -1,5 +1,3 @@
-package tw.com.fstop.util.dbi;
-
 /*
  * net/balusc/util/ObjectConverter.java
  * 
@@ -16,6 +14,8 @@ package tw.com.fstop.util.dbi;
  * You should have received a copy of the GNU Lesser General Public License along with this library.
  * If not, see <http://www.gnu.org/licenses/>.
  */
+
+package tw.com.fstop.util.dbi;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;

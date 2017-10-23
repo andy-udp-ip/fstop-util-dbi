@@ -13,11 +13,19 @@
 
 package tw.com.fstop.util.dbi;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
+import org.hsqldb.persist.HsqlProperties;
+import org.hsqldb.server.Server;
+import org.hsqldb.server.ServerAcl.AclFormatException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,14 +37,59 @@ import static org.junit.Assert.assertTrue;
 
 public class BaseJdbcDaoTest
 {
+    
+    Server server1;
+    Server server2;
+    
+    /**
+     * Setup and start db servers
+     *  
+     * @throws IOException io exception
+     * @throws AclFormatException acl exception
+     */
     @Before    
-    public void setup() 
+    public void setup() throws IOException, AclFormatException 
     {
+        
+        Properties prop = new Properties();
+        InputStream input = null;
+        String fileName;
+        HsqlProperties configProps;
+        
+        fileName = "hsql_server.properties";
+        input = new FileInputStream(fileName);        
+        prop.load(input);
+        server1 = new Server();        
+        configProps = new HsqlProperties(prop);
+        server1.setProperties(configProps);        
+        server1.setNoSystemExit(true);
+        server1.start();
+
+        prop.clear();
+
+        fileName = "hsql_server2.properties";
+        input = new FileInputStream(fileName);     
+        prop.load(input);
+        server2 = new Server();        
+        configProps = new HsqlProperties(prop);
+        server2.setProperties(configProps);        
+        server2.setNoSystemExit(true);
+        server2.start();
+        
+        System.out.println("====================[DB Server Start Complete]=======================");
+        
     }
     
+    /**
+     * Shutdown db servers.
+     * 
+     */
     @After
     public void tearDown() 
     {
+        server1.stop();
+        server2.stop();
+        System.out.println("====================[DB Server Shutdown Complete]=======================");
     }
 
     @Test

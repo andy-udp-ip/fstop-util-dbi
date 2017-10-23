@@ -1,0 +1,5 @@
+# Hikari data source provider
+tw.com.fstop.util.dbi.HikariDataSourceProvider
+
+# C3P0 data source provider
+tw.com.fstop.util.dbi.C3p0DataSourceProvider

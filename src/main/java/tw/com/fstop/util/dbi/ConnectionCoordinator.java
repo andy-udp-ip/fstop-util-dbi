@@ -57,12 +57,16 @@ public class ConnectionCoordinator
 	static final String DB_SETTING_PROP = "dbi.properties";
 	
 	static Properties prop = null;
+	static DataSourceService service = null;
 	
 	static 
 	{
 	    try
         {
             prop =PropUtil.loadProperties(DB_SETTING_PROP);
+            
+            //initialize data source service 
+            service = DataSourceServiceImpl.getInstance();
         }
         catch (IOException e)
         {
@@ -179,6 +183,7 @@ public class ConnectionCoordinator
 		
 		dbInfo = getDbConnectionInfo(dbName, tableName);
 		
+		/* for JDK 1.5 and blow
         if (dbInfo.getDataSource() == null)
         {
             String poolName = dbInfo.getPoolName();
@@ -193,6 +198,16 @@ public class ConnectionCoordinator
                 dbInfo.setDataSource(ds);
             }
         }
+        */
+		
+		// for JDK 1.6 and above
+		if (dbInfo.getDataSource() == null)
+		{
+		    String poolName = dbInfo.getPoolName();
+		    ds = service.getDataSource(poolName, dbName);
+		    dbInfo.setDataSource(ds);
+		}
+		
 
 		return dbInfo;
 	}//getPooledDbConnectionInfo

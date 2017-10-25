@@ -1,0 +1,322 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>tw.com.fstop</groupId>
+  <artifactId>fstop-util-dbi</artifactId>
+  <packaging>jar</packaging>
+  <version>1.0.1</version>
+  
+  <name>fstop-util-dbi</name>
+  <url>https://github.com/andy-udp-ip/fstop-util-dbi</url>
+  
+  <description>
+      fstop-util-dbi source code.
+  </description>
+	
+  <licenses>
+      <license>
+          <name>Apache 2</name>
+          <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+          <distribution>repo</distribution>
+          <comments>A business-friendly OSS license</comments>
+      </license>
+  </licenses>
+  
+  <organization>
+      <name>fstop</name>
+      <url>http://www.fstop.com.tw</url>
+  </organization>
+  
+  <developers>
+      <developer>
+          <id>Andy</id>
+          <name>Andy Lee</name>
+          <email>andy.udp.ip@gmail.com</email>
+          <url>http://www.fstop.com.tw</url>
+          <organization>fstop</organization>
+          <organizationUrl>http://www.fstop.com.tw</organizationUrl>
+          <roles>
+              <role>developer</role>
+          </roles>
+          <timezone>+8</timezone>
+      </developer>
+  </developers>
+
+  <properties>
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+      <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>	  
+      <jdk.version>1.8</jdk.version>
+      <java.level>7</java.level>
+	  <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
+	  
+	  <!-- delimiter that doesn't clash with Spring ${} placeholders. Ex ${project.version} to @project.version@ -->
+	  <!-- <resource.delimiter>@</resource.delimiter> -->
+
+      <github.global.server>github</github.global.server>
+      <!-- <github.global.oauth2Token>${env.GITHUB_OAUTH_TOKEN}</github.global.oauth2Token> -->
+      
+      <slf4j.version>1.7.7</slf4j.version>
+  </properties>
+
+  <scm>
+	<connection>scm:git:git@github.com:andy-udp-ip/fstop-util-dbi.git</connection>
+	<url>scm:git:git@github.com:andy-udp-ip/fstop-util-dbi.git</url>
+	<developerConnection>scm:git:git@github.com:andy-udp-ip/fstop-util-dbi.git</developerConnection>
+    <tag>v1.0.1</tag>
+  </scm>    
+
+  
+  <distributionManagement>
+      <repository>
+          <id>${project.name}</id>
+          <name>fstop-util-dbi repository</name>
+          <url>file://${project.build.directory}/mvn-repo</url>
+      </repository>
+	  <snapshotRepository>
+        <id>${project.name}</id>
+        <name>fstop-util-dbi snapshot repository</name>
+        <url>file://${project.build.directory}/mvn-repo</url>
+      </snapshotRepository>
+  </distributionManagement>
+
+  <repositories>
+    <repository>
+        <id>fstop-util-prop-mvn-repo</id>
+        <url>https://raw.github.com/andy-udp-ip/fstop-util-prop/mvn-repo/</url>
+        <!-- 
+        <releases>
+            <enabled>true</enabled>
+    	</releases>
+        
+        <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+        </snapshots>
+        -->
+    </repository>
+    <repository>
+        <id>fstop-util-string-mvn-repo</id>
+        <url>https://raw.github.com/andy-udp-ip/fstop-util-string/mvn-repo/</url>
+    </repository>
+  </repositories>
+
+ 
+  <build>
+    <plugins>
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>3.0.1</version>
+          <executions>
+              <execution>
+                  <id>attach-sources</id>
+                  <goals>
+                      <goal>jar</goal>
+                  </goals>
+              </execution>
+          </executions>
+          <inherited>true</inherited>
+      </plugin>
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.9.1</version>
+          <executions>
+              <execution>
+                  <id>attach-api-docs</id>
+                  <goals>
+                      <goal>jar</goal>
+                  </goals>
+              </execution>
+          </executions>
+          <inherited>true</inherited>
+      </plugin>	
+	
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.5.1</version>
+          <configuration>
+              <source>${jdk.version}</source>
+              <target>${jdk.version}</target>
+              <encoding>${project.build.sourceEncoding}</encoding>
+          </configuration>
+      </plugin>
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>2.8</version>
+          <executions>
+              <execution>
+                  <id>copy-dependencies</id>
+                  <phase>package</phase>
+                  <goals>
+                      <goal>copy-dependencies</goal>
+                  </goals>
+                  <configuration>
+                      <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                      <overWriteReleases>false</overWriteReleases>
+                      <overWriteSnapshots>false</overWriteSnapshots>
+                      <overWriteIfNewer>true</overWriteIfNewer>
+                  </configuration>
+              </execution>
+          </executions>
+      </plugin>
+  
+  	  <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-release-plugin</artifactId>
+            <version>2.5.3</version>
+            <configuration>
+              <tagNameFormat>v@{project.version}</tagNameFormat>
+            </configuration>	
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.maven.scm</groupId>
+                <artifactId>maven-scm-provider-gitexe</artifactId>
+                <version>1.9</version>
+              </dependency>
+            </dependencies>			
+      </plugin>
+	  
+      <plugin>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.8.1</version>
+          <configuration>
+              <altDeploymentRepository>internal.repo::default::file://${project.build.directory}/mvn-repo</altDeploymentRepository>
+          </configuration>
+      </plugin>	  
+      <plugin>
+          <!-- Deploy the web site -->
+          <groupId>com.github.github</groupId>
+          <artifactId>site-maven-plugin</artifactId>
+          <version>0.12</version>
+          <configuration>
+               <!-- git commit message -->
+               <message>Maven artifacts for ${project.name} ${project.version}</message>
+               <!-- disable webpage processing -->
+               <noJekyll>true</noJekyll>
+               <!-- matches distribution management repository url above -->
+               <outputDirectory>${project.build.directory}/mvn-repo</outputDirectory>
+               <!-- remote branch name -->
+               <branch>refs/heads/mvn-repo</branch>
+               <!-- If you remove this then the old artifact will be removed and new 
+                one will replace. But with the merge tag you can just release by changing 
+                                                 the version -->
+               <merge>true</merge>
+               <includes>
+                 <include>**/*</include>
+               </includes>
+               <!-- github repo name -->
+               <repositoryName>${project.name}</repositoryName>
+               <!-- github username -->
+               <repositoryOwner>andy-udp-ip</repositoryOwner>
+          </configuration>
+		  
+          <executions>
+              <execution>
+                  <goals>
+                      <goal>site</goal>
+                  </goals>
+                  <!-- select the Maven phase in which the plugin will be executed -->
+                  <phase>deploy</phase>
+              </execution>
+          </executions>
+      </plugin>  	
+	
+    </plugins>
+  </build>
+  
+  <dependencies>
+    <dependency>
+      <groupId>tw.com.fstop</groupId>
+      <artifactId>fstop-util-string</artifactId>
+      <version>1.0.1</version>
+      <scope>compile</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>tw.com.fstop</groupId>
+      <artifactId>fstop-util-prop</artifactId>
+      <version>1.0.1</version>
+      <scope>compile</scope>
+    </dependency>
+    
+	<dependency>
+	  <groupId>commons-dbutils</groupId>
+	  <artifactId>commons-dbutils</artifactId>
+	  <version>1.7</version>
+	  <scope>compile</scope>
+	</dependency>
+
+	<dependency>
+		<groupId>org.slf4j</groupId>
+		<artifactId>slf4j-api</artifactId>
+		<version>${slf4j.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>org.slf4j</groupId>
+		<artifactId>jcl-over-slf4j</artifactId>
+		<version>${slf4j.version}</version>
+		<scope>compile</scope>
+	</dependency>
+	<dependency>
+		<groupId>org.slf4j</groupId>
+		<artifactId>slf4j-log4j12</artifactId>
+		<version>${slf4j.version}</version>
+		<scope>compile</scope>
+	</dependency>
+	<dependency>
+		<groupId>log4j</groupId>
+		<artifactId>log4j</artifactId>
+		<version>1.2.17</version>
+		<exclusions>
+			<exclusion>
+				<groupId>com.sun.jdmk</groupId>
+				<artifactId>jmxtools</artifactId>
+			</exclusion>
+			<exclusion>
+				<groupId>com.sun.jmx</groupId>
+				<artifactId>jmxri</artifactId>
+			</exclusion>
+		</exclusions>
+		<scope>compile</scope>
+	</dependency>
+
+	<!-- JDBC connection pools -->
+	<dependency>
+		<groupId>com.mchange</groupId>
+		<artifactId>c3p0</artifactId>
+		<version>0.9.5</version>
+	</dependency>
+	
+	<!-- HikariCP for java8. 必需依照不同 jdk 使用不用的版本 -->
+	<dependency>
+        <groupId>com.zaxxer</groupId>
+        <artifactId>HikariCP</artifactId>
+        <version>2.7.1</version>
+    </dependency>	   
+    
+    <!-- JDBC drivers -->
+	<dependency>
+    	<groupId>org.hsqldb</groupId>
+    	<artifactId>hsqldb</artifactId>
+    	<version>2.4.0</version>
+	</dependency>
+    
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>3.5.2</version>
+      <scope>test</scope>
+	</dependency>
+    
+  </dependencies>
+  
+ </project>

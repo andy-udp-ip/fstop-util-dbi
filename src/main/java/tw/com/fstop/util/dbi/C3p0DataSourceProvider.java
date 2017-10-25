@@ -20,6 +20,13 @@ import org.slf4j.LoggerFactory;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
+/**
+ * C3p0 connection pool DataSource provider.
+ * 
+ * C3p0 config by c3p0-config.xml
+ *
+ * @since 1.0.2
+ */
 public class C3p0DataSourceProvider implements DataSourceProvider
 {
     private static Logger log = LoggerFactory.getLogger(C3p0DataSourceProvider.class);

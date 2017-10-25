@@ -21,6 +21,13 @@ import org.slf4j.LoggerFactory;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+/**
+ * Hikari connection pool DataSource provider.
+ * 
+ * Hikari config by dbName.hikari.properties 
+ *
+ * @since 1.0.2
+ */
 public class HikariDataSourceProvider implements DataSourceProvider
 {
     private static Logger log = LoggerFactory.getLogger(HikariDataSourceProvider.class);

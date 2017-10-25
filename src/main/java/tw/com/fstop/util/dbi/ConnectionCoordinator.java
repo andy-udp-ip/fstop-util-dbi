@@ -37,15 +37,26 @@ import tw.com.fstop.util.PropUtil;
 
 
 /**
- * Data base connection coordinator.
+ * Database connection coordinator.
  * <pre>
- * Provide data base connections by custom property. 
- * Some property key is hard code and can be modified if required.
- * for Example:
- *   default.db.jndiname
- *   .db.jndiname
  *   
- * Load configurations from dbi.properties.
+ * Load configuration file "dbi.properties" from class path 
+ * or through system property settings.
+ * 
+ * Uses {@link DataSourceService} interface for DataSource service plugin.
+ * New {@link DataSourceProvider} can be add 
+ * through standard java service loader {@link ServiceLoader}.
+ * 
+ * Default build in DataSource providers are 
+ * {@link HikariDataSourceProvider} and {@link C3p0DataSourceProvider}.  
+ * 
+ * 
+ * For developer :
+ *   Some property keys are hard coded and can be modified if required.
+ *   for Example:
+ *     .db.jndiname
+ *     .db.pool
+ * 
  * </pre>
  * 
  * @since 1.0.0

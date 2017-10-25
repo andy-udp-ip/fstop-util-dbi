@@ -26,7 +26,7 @@ import com.zaxxer.hikari.HikariDataSource;
  * 
  * Hikari config by dbName.hikari.properties 
  *
- * @since 1.0.2
+ * @since 1.0.1
  */
 public class HikariDataSourceProvider implements DataSourceProvider
 {

@@ -45,7 +45,7 @@ import tw.com.fstop.util.PropUtil;
  * 
  * Uses {@link DataSourceService} interface for DataSource service plugin.
  * New {@link DataSourceProvider} can be add 
- * through standard java service loader {@link ServiceLoader}.
+ * through standard java service loader ServiceLoader.
  * 
  * Default build in DataSource providers are 
  * {@link HikariDataSourceProvider} and {@link C3p0DataSourceProvider}.  

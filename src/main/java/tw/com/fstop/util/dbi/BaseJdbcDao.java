@@ -1117,6 +1117,7 @@ public abstract class BaseJdbcDao
 	/**
 	 * insert data into table by custom sql.
 	 * 
+	 * @param sql sql statement to insert
 	 * @param map parameter map
 	 * @return int 1為成功 ,0為失敗
 	 */

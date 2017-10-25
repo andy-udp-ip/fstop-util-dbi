@@ -25,7 +25,7 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
  * 
  * C3p0 config by c3p0-config.xml
  *
- * @since 1.0.2
+ * @since 1.0.1
  */
 public class C3p0DataSourceProvider implements DataSourceProvider
 {

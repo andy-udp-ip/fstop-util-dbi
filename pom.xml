@@ -3,7 +3,7 @@
   <groupId>tw.com.fstop</groupId>
   <artifactId>fstop-util-dbi</artifactId>
   <packaging>jar</packaging>
-  <version>1.0.1-SNAPSHOT</version>
+  <version>1.0.1</version>
   
   <name>fstop-util-dbi</name>
   <url>https://github.com/andy-udp-ip/fstop-util-dbi</url>
@@ -61,7 +61,7 @@
 	<connection>scm:git:git@github.com:andy-udp-ip/fstop-util-dbi.git</connection>
 	<url>scm:git:git@github.com:andy-udp-ip/fstop-util-dbi.git</url>
 	<developerConnection>scm:git:git@github.com:andy-udp-ip/fstop-util-dbi.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v1.0.1</tag>
   </scm>    
 
   

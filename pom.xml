@@ -45,7 +45,8 @@
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>	  
       <jdk.version>1.8</jdk.version>
-      <java.level>7</java.level>
+      <java.source.version>1.8</java.source.version>
+      <java.target.version>1.8</java.target.version>
 	  <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
 	  
 	  <!-- delimiter that doesn't clash with Spring ${} placeholders. Ex ${project.version} to @project.version@ -->
@@ -136,8 +137,8 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.5.1</version>
           <configuration>
-              <source>${jdk.version}</source>
-              <target>${jdk.version}</target>
+              <source>${java.source.version}</source>
+              <target>${java.target.version}</target>
               <encoding>${project.build.sourceEncoding}</encoding>
           </configuration>
       </plugin>
